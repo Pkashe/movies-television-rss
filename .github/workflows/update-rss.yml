@@ -4,9 +4,8 @@ name: Publish Movies and Television RSS
 on:
   workflow_dispatch:
   schedule:
-    # Apify runs at 00:00, 08:00, 16:00 UTC.
-    # Publish one hour later.
-    - cron: '0 1,9,17 * * *'
+    - cron: '30 17 * * *'
+      timezone: "Australia/Sydney"
 
 permissions:
   contents: read
@@ -20,30 +19,35 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Generate RSS from most recent successful Apify task
+      - name: Generate combined Movies and Television RSS
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
-          APIFY_TASK: notched_trainee~movies-television-top-today
+          APIFY_TASK: 5IGGtHCecD58Bptm3
           FEED_BASE_URL: https://pkashe.github.io/movies-television-rss
         run: python generate_rss.py
 
-      - uses: actions/configure-pages@v5
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload RSS files
+        uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
-      - name: Deploy RSS to GitHub Pages
+      - name: Publish RSS to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
